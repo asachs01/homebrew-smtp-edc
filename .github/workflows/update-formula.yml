@@ -19,10 +19,14 @@ jobs:
         id: set_tag
         run: |
           if [ -n "${{ github.event.inputs.release_tag }}" ]; then
-            echo "tag=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+            TAG="${{ github.event.inputs.release_tag }}"
           else
-            echo "tag=${{ github.event.client_payload.release_tag }}" >> $GITHUB_OUTPUT
+            TAG="${{ github.event.client_payload.release_tag }}"
           fi
+          # Remove any 'refs/tags/' prefix if present
+          TAG="${TAG#refs/tags/}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
           
       - name: Get release info
         id: release
@@ -32,6 +36,7 @@ jobs:
         with:
           repo: asachs01/smtp-edc
           tag: ${{ steps.set_tag.outputs.tag }}
+        continue-on-error: false
           
       - name: Calculate SHA256
         id: sha
