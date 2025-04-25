@@ -30,13 +30,11 @@ jobs:
           
       - name: Get release info
         id: release
-        uses: bruceadams/get-release@v1.2.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          repo: asachs01/smtp-edc
-          tag: ${{ steps.set_tag.outputs.tag }}
-        continue-on-error: false
+        run: |
+          RELEASE_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/asachs01/smtp-edc/releases/tags/${{ steps.set_tag.outputs.tag }}")
+          TARBALL_URL=$(echo "$RELEASE_INFO" | jq -r '.tarball_url')
+          echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
           
       - name: Calculate SHA256
         id: sha
