@@ -1,0 +1,39 @@
+name: Update Formula
+on:
+  repository_dispatch:
+    types: [update-formula]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get release info
+        id: release
+        uses: bruceadams/get-release@v1.2.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo: asachs01/smtp-edc
+          tag: ${{ github.event.client_payload.release_tag }}
+          
+      - name: Calculate SHA256
+        id: sha
+        run: |
+          curl -L ${{ steps.release.outputs.tarball_url }} -o release.tar.gz
+          echo "sha256=$(shasum -a 256 release.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          
+      - name: Update formula
+        run: |
+          sed -i "s|url \".*\"|url \"${{ steps.release.outputs.tarball_url }}\"|" Formula/smtp-edc.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" Formula/smtp-edc.rb
+          sed -i "s|version \".*\"|version \"${{ github.event.client_payload.release_tag }}\"|" Formula/smtp-edc.rb
+          
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Formula/smtp-edc.rb
+          git commit -m "Update smtp-edc to ${{ github.event.client_payload.release_tag }}"
+          git push
