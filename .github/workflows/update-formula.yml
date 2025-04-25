@@ -15,6 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Set release tag
+        id: set_tag
+        run: |
+          if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.client_payload.release_tag }}" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Get release info
         id: release
         uses: bruceadams/get-release@v1.2.2
@@ -22,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           repo: asachs01/smtp-edc
-          tag: ${{ github.event.client_payload.release_tag }}
+          tag: ${{ steps.set_tag.outputs.tag }}
           
       - name: Calculate SHA256
         id: sha
@@ -34,12 +43,12 @@ jobs:
         run: |
           sed -i "s|url \".*\"|url \"${{ steps.release.outputs.tarball_url }}\"|" Formula/smtp-edc.rb
           sed -i "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" Formula/smtp-edc.rb
-          sed -i "s|version \".*\"|version \"${{ github.event.client_payload.release_tag }}\"|" Formula/smtp-edc.rb
+          sed -i "s|version \".*\"|version \"${{ steps.set_tag.outputs.tag }}\"|" Formula/smtp-edc.rb
           
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add Formula/smtp-edc.rb
-          git commit -m "Update smtp-edc to ${{ github.event.client_payload.release_tag }}"
+          git commit -m "Update smtp-edc to ${{ steps.set_tag.outputs.tag }}"
           git push
