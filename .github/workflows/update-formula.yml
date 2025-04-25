@@ -1,5 +1,11 @@
 name: Update Formula
 on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to update'
+        required: true
+        type: string
   repository_dispatch:
     types: [update-formula]
 
